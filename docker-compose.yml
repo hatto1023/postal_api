@@ -1,0 +1,43 @@
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_USER=postal_api_db_user
+      - DB_PASSWORD=postal_api_db_user_password
+      - DB_NAME=postal_api_db
+    restart: always
+    networks:
+      - postal-network
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db-data:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    networks:
+      - postal-network
+
+volumes:
+  db-data:
+
+networks:
+  postal-network:
+    driver: bridge
